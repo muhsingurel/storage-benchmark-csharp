@@ -10,4 +10,3 @@ A storage benchmark specifically developped for measuring read performance of la
       --parallel-option parallelOption[default: False]
       -?, -h, --help Show help and usage information
 
-# Download

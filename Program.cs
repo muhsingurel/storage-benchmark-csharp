@@ -16,6 +16,7 @@ namespace storage_benchmark
     //  --file-path<file-path> filePath
     //  --offset-option<offset-option> offsetOption[default: -1]
     //  --parallel-option parallelOption[default: False]
+    //  --data-chunk-size <data-chunk-size>  dataChunkSize [default: 10000]
     //  -?, -h, --help Show help and usage information
 
     class Program
@@ -23,15 +24,15 @@ namespace storage_benchmark
         /// <param name="filePath">filePath for the read test. A file larger than 100GB is recommended.</param>
         /// <param name="offsetOption">An optional offset number as number of chunks between 0-10000. Otherwise it is random</param>
         /// <param name="parallelOption">Optianal parallel read argument. --parallelOption true for parallel read</param>
-        /// <param name="dataChunkSize">Optianal data chunk size argument between 1024-262144(256KB) default is 10000</param>
+        /// <param name="dataChunkSize">Optianal data chunk size argument between 1024-524288(512KB) default is 10000</param>
         static void Main(string filePath, int offsetOption = -1, bool parallelOption = false, int dataChunkSize = 10000)
         {
             Console.WriteLine("----Storage Benchmark----");
             Console.WriteLine("");
 
-            //Ensure that the dataChunkSize is between 1024-131072 otherwise set it to min or max
+            //Ensure that the dataChunkSize is between 1024-524288 otherwise set it to min or max
             dataChunkSize = dataChunkSize < 1024 ? 1024 : dataChunkSize;
-            dataChunkSize = dataChunkSize > 128 * 1024 ? 256 * 1024 : dataChunkSize;
+            dataChunkSize = dataChunkSize > 512 * 1024 ? 512 * 1024 : dataChunkSize;
 
             //Initialize a stopwatch to measure performance
             var stopwatch = new Stopwatch();

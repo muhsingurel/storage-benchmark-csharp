@@ -1,6 +1,6 @@
 # storage-benchmark-csharp
  ## Why this benchmark?
- We need to test a specific read operation of large files from storage area networks. This benchmark tool measures the sequential and parallel read performance of large files in a particular way.
+ We need to test a specific read operation of large files from network-based storage solutions. This benchmark tool measures the sequential and parallel read performance of large files in a particular way.
  
  ## Usage
     Usage:

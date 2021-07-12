@@ -23,10 +23,15 @@ namespace storage_benchmark
         /// <param name="filePath">filePath for the read test. A file larger than 100GB is recommended.</param>
         /// <param name="offsetOption">An optional offset number as number of chunks between 0-10000. Otherwise it is random</param>
         /// <param name="parallelOption">Optianal parallel read argument. --parallelOption true for parallel read</param>
-        static void Main(string filePath, int offsetOption = -1, bool parallelOption = false)
+        /// <param name="dataChunkSize">Optianal data chunk size argument between 1024-262144(256KB) default is 10000</param>
+        static void Main(string filePath, int offsetOption = -1, bool parallelOption = false, int dataChunkSize = 10000)
         {
             Console.WriteLine("----Storage Benchmark----");
             Console.WriteLine("");
+
+            //Ensure that the dataChunkSize is between 1024-131072 otherwise set it to min or max
+            dataChunkSize = dataChunkSize < 1024 ? 1024 : dataChunkSize;
+            dataChunkSize = dataChunkSize > 128 * 1024 ? 256 * 1024 : dataChunkSize;
 
             //Initialize a stopwatch to measure performance
             var stopwatch = new Stopwatch();
@@ -40,8 +45,8 @@ namespace storage_benchmark
                 fileLenght = streamSource.Length;
             }
 
-            // Each chunck size is 10000 bytes
-            int singleChunkBufferLenght = 10000;
+            // Each chunck size is 10000 bytes by default otherwise parameter input
+            int singleChunkBufferLenght = dataChunkSize;
             // We can read these chunks from 10000 different location
             long maxOffsetAsChunks = 10000;
             int numberOfChunksToRead = (int)(fileLenght / (maxOffsetAsChunks * (long)singleChunkBufferLenght));
@@ -69,15 +74,15 @@ namespace storage_benchmark
                 long[] checksumBuffer = new long[numberOfChunksToRead];
                 Parallel.For(0, numberOfChunksToRead, chunkIndex =>
                 {
-                // Start reading the chunks and calculate chunk sum as a checksum. Later we can verify if the file is actually read with other tools.
-                // Each itteration creates a different file handler. When the itteration is complete the resource is disposed. Each itteration calculates the chunk position.
-                using (FileStream streamSource = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
+                    // Start reading the chunks and calculate chunk sum as a checksum. Later we can verify if the file is actually read with other tools.
+                    // Each itteration creates a different file handler. When the itteration is complete the resource is disposed. Each itteration calculates the chunk position.
+                    using (FileStream streamSource = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, singleChunkBufferLenght, FileOptions.Asynchronous))
                     {
                         byte[] singleChunkBuffer = new byte[singleChunkBufferLenght];
                         streamSource.Position = ((long)maxOffsetAsChunks * (long)chunkIndex * (long)singleChunkBuffer.Length + ((long)singleChunkBuffer.Length * (long)offsetOption)) % fileLenght;
                         streamSource.Read(singleChunkBuffer, 0, singleChunkBuffer.Length);
-                    //Calculate the chunk sum.
-                    for (int i = 0; i < singleChunkBuffer.Length; i++)
+                        //Calculate the chunk sum.
+                        for (int i = 0; i < singleChunkBuffer.Length; i++)
                         {
                             checksumBuffer[chunkIndex] += (long)singleChunkBuffer[i];
                         }
@@ -85,7 +90,7 @@ namespace storage_benchmark
                     }
                 });
                 stopwatch.Stop();
-                Console.WriteLine("Checksum: " + checksumBuffer.Sum() + "   Parallel read operation took " + stopwatch.ElapsedMilliseconds + " ms ");
+                Console.WriteLine("Data chunk size: " + singleChunkBufferLenght + " Checksum: " + checksumBuffer.Sum() + "   Parallel read operation took " + stopwatch.ElapsedMilliseconds + " ms ");
                 return;
             }
             else
@@ -96,7 +101,7 @@ namespace storage_benchmark
 
                 // Start reading the chunks and calculate chunk sum as a checksum. Later we can verify if the file is actually read with other tools.
                 // Create a single file handler. With each itteration change the positon to the next chunk to read.
-                using (FileStream streamSource = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
+                using (FileStream streamSource = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, singleChunkBufferLenght, FileOptions.Asynchronous))
                 {
                     for (int chunkIndex = 0; chunkIndex < numberOfChunksToRead; chunkIndex++)
                     {
@@ -111,7 +116,7 @@ namespace storage_benchmark
                     }
                 }
                 stopwatch.Stop();
-                Console.WriteLine("Checksum: " + checksum + "   Sequential read operation took " + stopwatch.ElapsedMilliseconds + " ms ");
+                Console.WriteLine("Data chunk size: " + singleChunkBufferLenght + " Checksum: " + checksum + "   Sequential read operation took " + stopwatch.ElapsedMilliseconds + " ms ");
                 return;
             }
         }
